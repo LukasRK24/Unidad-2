@@ -329,6 +329,9 @@ public static class ConstructorEscenas
         UtilConstructor.AsignarReferencia(pausa, "botonContinuar", continuar);
         UtilConstructor.AsignarReferencia(pausa, "botonReiniciar", reiniciar);
         UtilConstructor.AsignarReferencia(pausa, "botonMenu", menu);
+
+        // El panel se guarda apagado: solo se muestra cuando llega el evento
+        panel.SetActive(false);
     }
 
     private static void ConstruirPanelFin(Transform raiz, PanelFinPartida.Modo modo, string nombre, string textoTitulo, Color colorTitulo)
@@ -347,6 +350,9 @@ public static class ConstructorEscenas
         UtilConstructor.AsignarReferencia(script, "titulo", titulo);
         UtilConstructor.AsignarReferencia(script, "botonReiniciar", reiniciar);
         UtilConstructor.AsignarReferencia(script, "botonMenu", menu);
+
+        // El panel se guarda apagado: solo se muestra cuando llega el evento
+        panel.SetActive(false);
     }
 }
 #endif
