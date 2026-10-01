@@ -78,6 +78,16 @@ public static class ConstructorUnidad2
         EditorApplication.Exit(0);
     }
 
+    public static void CompilarWindowsPorLinea()
+    {
+        string carpeta = "Builds/Hito2_Final_Windows";
+        Directory.CreateDirectory(carpeta);
+        BuildPipeline.BuildPlayer(
+            new[] { UtilConstructor.Raiz + "/Scenes/MainMenu.unity", UtilConstructor.Raiz + "/Scenes/Level_01.unity" },
+            carpeta + "/Unidad2.exe", BuildTarget.StandaloneWindows64, BuildOptions.None);
+        EditorApplication.Exit(0);
+    }
+
     public static void CompilarLinuxPorLinea()
     {
         string folder = "Builds/Hito2_Final";
