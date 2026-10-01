@@ -6,6 +6,8 @@ Nivel 2D de plataformas hecho en **Unity 6 (6000.6) con URP 2D** para el curso *
 
 **Autor:** Christian Manuel Cueva Chambilla (trabajo individual)
 
+El código está escrito en español (nombres y comentarios), igual que en *Digital_Toy* de la Unidad 1.
+
 ## Cómo jugar
 
 | Acción | Teclado | Mando |
@@ -24,33 +26,33 @@ y los cerdos quitan vida; caer al vacío es muerte inmediata.
 | Requisito | Implementación |
 |---|---|
 | Mundo 2D con Tilemap y colisionadores compuestos | `Level_01`: Tilemap + `TilemapCollider2D` + `CompositeCollider2D` (Merge) + `Rigidbody2D` estático |
-| Cámara dinámica | `CameraFollow`: dead zone, damping (`SmoothDamp`), look-ahead, límites del nivel y shake por evento |
+| Cámara dinámica | `SeguimientoCamara`: dead zone, damping (`SmoothDamp`), look-ahead, límites del nivel y shake por evento |
 | Personaje animado | `Animator Controller` con Idle, Run, Jump, Fall, Dash y Hit; transiciones por parámetros sin *Has Exit Time* |
-| UI/UX reactiva | `HUDController` (barra de vida que parpadea, contador, mensajes), `PauseMenu`, `EndScreenPanel`, `MainMenu`; Canvas Scaler 1920x1080 |
-| Juice | `VFXManager` (ParticleSystem + Object Pool) y `AudioManager` (SFX + BGM + `AudioMixer` con grupos Music/SFX) |
-| Patrones | Singleton (`Singleton<T>`: GameManager, AudioManager, VFXManager), Observer (`GameEvents`), Object Pool |
-| SOLID | SRP: el jugador se divide en `PlayerInputHandler`, `PlayerMovement`, `PlayerHealth`, `PlayerCombat`, `PlayerAnimator`, `PlayerFeedback`; `IDamageable` como abstracción |
+| UI/UX reactiva | `ControladorHUD` (barra de vida que parpadea, contador, mensajes), `MenuPausa`, `PanelFinPartida`, `MainMenu`; Canvas Scaler 1920x1080 |
+| Juice | `ControladorEfectos` (ParticleSystem + Object Pool) y `ControladorAudio` (SFX + BGM + `AudioMixer` con grupos Music/SFX) |
+| Patrones | Singleton (`Singleton<T>`: ControladorJuego, ControladorAudio, ControladorEfectos), Observer (`EventosJuego`), Object Pool |
+| SOLID | SRP: el jugador se divide en `ControladorEntradaJugador`, `MovimientoJugador`, `VidaJugador`, `CombateJugador`, `AnimadorJugador`, `EfectosJugador`; `IRecibeDanio` como abstracción |
 
 ## Arquitectura
 
 ```
-                    GameEvents (static, Observer)
+                    EventosJuego (static, Observer)
    publica ──────────────┬──────────────────────── escucha
- PlayerMovement          │            HUDController, PauseMenu, EndScreenPanel
- PlayerHealth            │            AudioManager, VFXManager
- Collectible, Goal       │            GameManager, CameraFollow, PlayerAnimator
- EnemyPatrol             │
+ MovimientoJugador          │            ControladorHUD, MenuPausa, PanelFinPartida
+ VidaJugador            │            ControladorAudio, ControladorEfectos
+ Coleccionable, Goal       │            ControladorJuego, SeguimientoCamara, AnimadorJugador
+ EnemigoPatrulla             │
 ```
 
 Ningún script de gameplay conoce a la UI: el jugador solo anuncia "cambió mi vida" y quien quiera reaccionar
 se suscribe (`OnEnable` suscribe, `OnDisable` desuscribe). Cada evento documenta quién lo publica y quién lo escucha
-en `Assets/_Project/Scripts/Architecture/GameEvents.cs`.
+en `Assets/_Project/Scripts/Arquitectura/EventosJuego.cs`.
 
 ## Estructura
 
 ```
 Assets/_Project/
-  Scripts/{Architecture,Player,World,Cameras,Audio,VFX,UI}   código de juego (asmdef Unidad2.Runtime)
+  Scripts/{Arquitectura,Jugador,Mundo,Camaras,Audio,Efectos,Interfaz}   código de juego (asmdef Unidad2.Runtime)
   Editor/                                                     generador de nivel/escenas (menú "Unidad 2")
   Tests/PlayMode/                                             18 pruebas automáticas
   Art/ Audio/ Animations/ Prefabs/ Scenes/
