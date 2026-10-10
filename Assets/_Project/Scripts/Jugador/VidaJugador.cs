@@ -11,6 +11,7 @@ public class VidaJugador : MonoBehaviour, IRecibeDanio
     private MovimientoJugador movimiento;
     private int vidaActual;
     private float invulnerableHasta;
+    private Vector3 posicionInicial;
 
     public int VidaActual => vidaActual;
     public bool EstaMuerto => vidaActual <= 0;
@@ -19,6 +20,7 @@ public class VidaJugador : MonoBehaviour, IRecibeDanio
     {
         movimiento = GetComponent<MovimientoJugador>();
         vidaActual = vidaMaxima;
+        posicionInicial = transform.position;
     }
 
     private void Start()
@@ -48,14 +50,28 @@ public class VidaJugador : MonoBehaviour, IRecibeDanio
         movimiento.Empujar(new Vector2(sentido * empuje.x, empuje.y));
     }
 
-    // Para el vacio: muerte directa sin importar la invulnerabilidad
+    // Para el vacio: quita 1 vida y reaparece, a menos que sea la ultima
     public void Matar()
     {
         if (EstaMuerto) return;
 
-        vidaActual = 0;
+        vidaActual--;
         EventosJuego.CambiarVida(vidaActual, vidaMaxima);
         EventosJuego.HerirJugador(transform.position);
-        EventosJuego.MorirJugador();
+
+        if (vidaActual <= 0)
+        {
+            EventosJuego.MorirJugador();
+        }
+        else
+        {
+            // Respawn en la posicion inicial
+            transform.position = posicionInicial;
+            movimiento.ResetearFisicas();
+            invulnerableHasta = Time.time + segundosInvulnerable;
+            
+            // Para resetear la camara al instante
+            EventosJuego.MostrarAviso("¡Cuidado con el vacio!");
+        }
     }
 }

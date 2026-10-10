@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 // Singleton: solo lleva el estado de la partida (frutas, pausa y fin de nivel).
@@ -22,6 +23,8 @@ public class ControladorJuego : Singleton<ControladorJuego>
         EventosJuego.AlMorirJugador += ManejarMuerte;
         EventosJuego.AlPedirPausa += AlternarPausa;
         EventosJuego.AlPedirReinicio += CargadorEscenas.RecargarActual;
+        EventosJuego.AlHerirJugador += ManejarHitStopFuerte;
+        EventosJuego.AlDerrotarEnemigo += ManejarHitStopLeve;
     }
 
     private void OnDisable()
@@ -31,6 +34,8 @@ public class ControladorJuego : Singleton<ControladorJuego>
         EventosJuego.AlMorirJugador -= ManejarMuerte;
         EventosJuego.AlPedirPausa -= AlternarPausa;
         EventosJuego.AlPedirReinicio -= CargadorEscenas.RecargarActual;
+        EventosJuego.AlHerirJugador -= ManejarHitStopFuerte;
+        EventosJuego.AlDerrotarEnemigo -= ManejarHitStopLeve;
     }
 
     protected override void OnDestroy()
@@ -80,5 +85,21 @@ public class ControladorJuego : Singleton<ControladorJuego>
         EnPausa = !EnPausa;
         Time.timeScale = EnPausa ? 0f : 1f;
         EventosJuego.CambiarPausa(EnPausa);
+    }
+    
+    private void ManejarHitStopFuerte(Vector3 pos) => StartCoroutine(RutinaHitStop(0.1f));
+    private void ManejarHitStopLeve(Vector3 pos) => StartCoroutine(RutinaHitStop(0.04f));
+
+    private IEnumerator RutinaHitStop(float duracionReal)
+    {
+        if (EnPausa || Terminado) yield break;
+        
+        Time.timeScale = 0.05f; // Casi congelado
+        yield return new WaitForSecondsRealtime(duracionReal);
+        
+        if (!EnPausa && !Terminado)
+        {
+            Time.timeScale = 1f; // Restaurar
+        }
     }
 }

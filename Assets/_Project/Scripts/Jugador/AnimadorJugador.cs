@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 // Conecta lo que hace el jugador con el Animator Controller (la maquina de estados).
@@ -16,6 +17,7 @@ public class AnimadorJugador : MonoBehaviour
     private static readonly int MuertoHash = Animator.StringToHash("Muerto");
 
     private MovimientoJugador movimiento;
+    private Coroutine rutinaParpadeo;
 
     private void Awake()
     {
@@ -45,6 +47,29 @@ public class AnimadorJugador : MonoBehaviour
         renderizador.flipX = movimiento.DireccionMirada < 0f;
     }
 
-    private void ManejarHerido(Vector3 posicion) => animador.SetTrigger(HeridoHash);
-    private void ManejarMuerte() => animador.SetBool(MuertoHash, true);
+    private void ManejarHerido(Vector3 posicion)
+    {
+        animador.SetTrigger(HeridoHash);
+        if (rutinaParpadeo != null) StopCoroutine(rutinaParpadeo);
+        rutinaParpadeo = StartCoroutine(RutinaParpadeoInvulnerabilidad());
+    }
+
+    private IEnumerator RutinaParpadeoInvulnerabilidad()
+    {
+        // El jugador es invulnerable por 1.2 segundos (definido en VidaJugador)
+        float tiempoFin = Time.time + 1.2f;
+        while (Time.time < tiempoFin)
+        {
+            renderizador.enabled = !renderizador.enabled;
+            yield return new WaitForSeconds(0.08f);
+        }
+        renderizador.enabled = true;
+    }
+
+    private void ManejarMuerte()
+    {
+        if (rutinaParpadeo != null) StopCoroutine(rutinaParpadeo);
+        renderizador.enabled = true;
+        animador.SetBool(MuertoHash, true);
+    }
 }

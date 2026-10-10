@@ -11,11 +11,18 @@ public class CombateJugador : MonoBehaviour
     private VidaJugador vida;
     private Collider2D cuerpo;
 
+    private int multiplicadorCombo = 0;
+
     private void Awake()
     {
         movimiento = GetComponent<MovimientoJugador>();
         vida = GetComponent<VidaJugador>();
         cuerpo = GetComponent<Collider2D>();
+    }
+
+    private void Update()
+    {
+        if (movimiento.EnSuelo) multiplicadorCombo = 0;
     }
 
     private void OnCollisionEnter2D(Collision2D colision) => Resolver(colision);
@@ -24,8 +31,8 @@ public class CombateJugador : MonoBehaviour
     private void Resolver(Collision2D colision)
     {
         if (vida.EstaMuerto) return;
-        if (!colision.collider.TryGetComponent(out EnemigoPatrulla enemigo)) return;
-        if (enemigo.EstaDerrotado) return;
+        if (!colision.collider.TryGetComponent(out IRecibeDanio enemigo)) return;
+        if (enemigo.EstaMuerto) return;
 
         Vector2 punto = colision.GetContact(0).point;
 
@@ -34,8 +41,14 @@ public class CombateJugador : MonoBehaviour
 
         if (pisoton)
         {
+            multiplicadorCombo++;
             enemigo.RecibirDanio(1, punto);
             movimiento.Rebotar(rebotePisoton);
+            
+            if (multiplicadorCombo > 1)
+            {
+                EventosJuego.HacerCombo(transform.position, multiplicadorCombo);
+            }
         }
         else if (movimiento.EnDash)
         {

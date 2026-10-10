@@ -15,6 +15,21 @@ public class ControladorEfectos : Singleton<ControladorEfectos>
     // Un pool por cada tipo de particula
     private readonly Dictionary<ParticleSystem, ObjectPool<ParticleSystem>> pools = new Dictionary<ParticleSystem, ObjectPool<ParticleSystem>>();
 
+    [Header("Textos (Juice)")]
+    [SerializeField] private TextoFlotante prefabTextoFlotante;
+    private ObjectPool<TextoFlotante> poolTextos;
+
+    private void Awake()
+    {
+        // El pool de textos se crea en Awake
+        poolTextos = new ObjectPool<TextoFlotante>(
+            () => Instantiate(prefabTextoFlotante, transform),
+            texto => texto.gameObject.SetActive(true),
+            texto => texto.gameObject.SetActive(false),
+            texto => Destroy(texto.gameObject),
+            false, 10, 30);
+    }
+
     private void OnEnable()
     {
         EventosJuego.AlSaltarJugador += ManejarSalto;
@@ -23,6 +38,7 @@ public class ControladorEfectos : Singleton<ControladorEfectos>
         EventosJuego.AlHerirJugador += ManejarHerido;
         EventosJuego.AlRecogerFruta += ManejarFruta;
         EventosJuego.AlDerrotarEnemigo += ManejarEnemigoDerrotado;
+        EventosJuego.AlHacerCombo += ManejarCombo;
     }
 
     private void OnDisable()
@@ -33,6 +49,7 @@ public class ControladorEfectos : Singleton<ControladorEfectos>
         EventosJuego.AlHerirJugador -= ManejarHerido;
         EventosJuego.AlRecogerFruta -= ManejarFruta;
         EventosJuego.AlDerrotarEnemigo -= ManejarEnemigoDerrotado;
+        EventosJuego.AlHacerCombo -= ManejarCombo;
     }
 
     public void Reproducir(ParticleSystem prefab, Vector3 posicion)
@@ -69,6 +86,36 @@ public class ControladorEfectos : Singleton<ControladorEfectos>
     private void ManejarAterrizaje(Vector3 posicion) => Reproducir(prefabPolvo, posicion);
     private void ManejarDash(Vector3 posicion, float direccion) => Reproducir(prefabDash, posicion);
     private void ManejarHerido(Vector3 posicion) => Reproducir(prefabGolpe, posicion);
-    private void ManejarFruta(Vector3 posicion) => Reproducir(prefabChispa, posicion);
-    private void ManejarEnemigoDerrotado(Vector3 posicion) => Reproducir(prefabGolpe, posicion);
+    
+    private void ManejarFruta(Vector3 posicion) 
+    {
+        Reproducir(prefabChispa, posicion);
+        if (prefabTextoFlotante != null)
+        {
+            TextoFlotante texto = poolTextos.Get();
+            texto.transform.position = posicion + Vector3.up * 0.5f;
+            texto.Configurar("+1", Color.yellow);
+        }
+    }
+    
+    private void ManejarEnemigoDerrotado(Vector3 posicion) 
+    {
+        Reproducir(prefabGolpe, posicion);
+        if (prefabTextoFlotante != null)
+        {
+            TextoFlotante texto = poolTextos.Get();
+            texto.transform.position = posicion + Vector3.up * 0.5f;
+            texto.Configurar("POW!", Color.red);
+        }
+    }
+    
+    private void ManejarCombo(Vector3 posicion, int cantidad) 
+    {
+        if (prefabTextoFlotante != null)
+        {
+            TextoFlotante texto = poolTextos.Get();
+            texto.transform.position = posicion + Vector3.up * 1f;
+            texto.Configurar("x" + cantidad + "!", Color.magenta);
+        }
+    }
 }

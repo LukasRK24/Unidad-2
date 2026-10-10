@@ -11,9 +11,9 @@ public class Peligro : MonoBehaviour
     // Stay y no Enter para que lo siga lastimando si se queda encima cuando termina la invulnerabilidad
     private void OnTriggerStay2D(Collider2D otro)
     {
-        if (!otro.TryGetComponent(out VidaJugador vida)) return;
+        if (!otro.TryGetComponent(out IRecibeDanio recibeDanio)) return;
 
-        if (muerteInstantanea) vida.Matar();
-        else vida.RecibirDanio(danio, transform.position);
+        if (muerteInstantanea) recibeDanio.Matar();
+        else recibeDanio.RecibirDanio(danio, transform.position);
     }
 }

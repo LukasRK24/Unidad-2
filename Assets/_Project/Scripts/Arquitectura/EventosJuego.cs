@@ -22,6 +22,8 @@ public static class EventosJuego
     public static event Action<Vector3> AlRecogerFruta;
     // D: EnemigoPatrulla | E: ControladorAudio, ControladorEfectos
     public static event Action<Vector3> AlDerrotarEnemigo;
+    // D: CombateJugador | E: ControladorEfectos
+    public static event Action<Vector3, int> AlHacerCombo;
     // D: Meta | E: ControladorJuego
     public static event Action AlLlegarMeta;
     // D: ControladorJuego | E: ControladorAudio, PanelFinPartida
@@ -45,6 +47,7 @@ public static class EventosJuego
     public static void MorirJugador() => AlMorirJugador?.Invoke();
     public static void RecogerFruta(Vector3 posicion) => AlRecogerFruta?.Invoke(posicion);
     public static void DerrotarEnemigo(Vector3 posicion) => AlDerrotarEnemigo?.Invoke(posicion);
+    public static void HacerCombo(Vector3 posicion, int cantidad) => AlHacerCombo?.Invoke(posicion, cantidad);
     public static void LlegarMeta() => AlLlegarMeta?.Invoke();
     public static void CompletarNivel() => AlCompletarNivel?.Invoke();
     public static void MostrarAviso(string mensaje) => AlMostrarAviso?.Invoke(mensaje);

@@ -1,50 +1,98 @@
 using System.Collections;
 using UnityEngine;
 
-// Enemigo que camina de lado a lado. Da la vuelta si hay pared o se acaba el piso,
-// y desaparece cuando recibe danio
+// --- PATRÓN STATE (MÁQUINA DE ESTADOS) ---
+public interface IEstadoEnemigo
+{
+    void Entrar(EnemigoPatrulla enemigo);
+    void Actualizar(EnemigoPatrulla enemigo);
+}
+
+// Estado: Caminar de lado a lado
+public class EstadoPatrullar : IEstadoEnemigo
+{
+    public void Entrar(EnemigoPatrulla enemigo) { }
+
+    public void Actualizar(EnemigoPatrulla enemigo)
+    {
+        bool hayPared = Physics2D.Raycast(enemigo.DetectorPared.position, Vector2.right * enemigo.Direccion, 0.3f, enemigo.CapaSuelo);
+        bool haySuelo = Physics2D.Raycast(enemigo.DetectorBorde.position, Vector2.down, 1.2f, enemigo.CapaSuelo);
+        
+        if (hayPared || !haySuelo) enemigo.Voltear();
+
+        enemigo.CuerpoRigido.linearVelocity = new Vector2(enemigo.Direccion * enemigo.Velocidad, enemigo.CuerpoRigido.linearVelocity.y);
+    }
+}
+
+// Estado: Muerto (Desactiva físicas para la animación de muerte)
+public class EstadoMuerto : IEstadoEnemigo
+{
+    public void Entrar(EnemigoPatrulla enemigo)
+    {
+        enemigo.GetComponent<Collider2D>().enabled = false;
+        enemigo.CuerpoRigido.linearVelocity = Vector2.zero;
+        enemigo.CuerpoRigido.simulated = false;
+    }
+
+    public void Actualizar(EnemigoPatrulla enemigo) { }
+}
+
+// Contexto de la Máquina de Estados
 [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public class EnemigoPatrulla : MonoBehaviour, IRecibeDanio
 {
+    [Header("Configuracion")]
     [SerializeField] private float velocidad = 2.5f;
     [SerializeField] private Transform detectorPared;
     [SerializeField] private Transform detectorBorde;
     [SerializeField] private LayerMask capaSuelo;
+    
+    [Header("Visuales")]
     [SerializeField] private SpriteRenderer renderizador;
     [SerializeField] private AnimadorSprites animadorSprites;
     [SerializeField] private Sprite[] spritesGolpe;
 
-    private Rigidbody2D rb;
-    private float direccion = -1f;
+    // Propiedades expuestas para los Estados
+    public float Velocidad => velocidad;
+    public Transform DetectorPared => detectorPared;
+    public Transform DetectorBorde => detectorBorde;
+    public LayerMask CapaSuelo => capaSuelo;
+    public Rigidbody2D CuerpoRigido { get; private set; }
+    public float Direccion { get; private set; } = -1f;
+
+    private IEstadoEnemigo estadoActual;
 
     public bool EstaDerrotado { get; private set; }
+    public bool EstaMuerto => EstaDerrotado;
+
+    public void Matar() => RecibirDanio(999, transform.position);
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
-        rb.freezeRotation = true;
+        CuerpoRigido = GetComponent<Rigidbody2D>();
+        CuerpoRigido.freezeRotation = true;
+        CambiarEstado(new EstadoPatrullar());
+    }
+
+    public void CambiarEstado(IEstadoEnemigo nuevoEstado)
+    {
+        estadoActual = nuevoEstado;
+        estadoActual.Entrar(this);
     }
 
     private void FixedUpdate()
     {
         if (EstaDerrotado) return;
-
-        // Un rayo hacia adelante para la pared y otro hacia abajo para el borde
-        bool hayPared = Physics2D.Raycast(detectorPared.position, Vector2.right * direccion, 0.3f, capaSuelo);
-        bool haySuelo = Physics2D.Raycast(detectorBorde.position, Vector2.down, 1.2f, capaSuelo);
-        if (hayPared || !haySuelo) Voltear();
-
-        rb.linearVelocity = new Vector2(direccion * velocidad, rb.linearVelocity.y);
+        estadoActual?.Actualizar(this);
     }
 
-    private void Voltear()
+    public void Voltear()
     {
-        direccion = -direccion;
-        renderizador.flipX = direccion > 0f;
+        Direccion = -Direccion;
+        renderizador.flipX = Direccion > 0f;
 
-        // Los detectores se pasan al lado nuevo
-        detectorPared.localPosition = new Vector3(Mathf.Abs(detectorPared.localPosition.x) * direccion, detectorPared.localPosition.y, 0f);
-        detectorBorde.localPosition = new Vector3(Mathf.Abs(detectorBorde.localPosition.x) * direccion, detectorBorde.localPosition.y, 0f);
+        detectorPared.localPosition = new Vector3(Mathf.Abs(detectorPared.localPosition.x) * Direccion, detectorPared.localPosition.y, 0f);
+        detectorBorde.localPosition = new Vector3(Mathf.Abs(detectorBorde.localPosition.x) * Direccion, detectorBorde.localPosition.y, 0f);
     }
 
     public void RecibirDanio(int cantidad, Vector2 puntoGolpe)
@@ -52,13 +100,11 @@ public class EnemigoPatrulla : MonoBehaviour, IRecibeDanio
         if (EstaDerrotado) return;
 
         EstaDerrotado = true;
+        CambiarEstado(new EstadoMuerto());
+        
         EventosJuego.DerrotarEnemigo(transform.position);
         EventosJuego.SacudirCamara(0.08f, 0.1f);
 
-        // Se apaga el collider y la fisica para que no moleste mientras desaparece
-        GetComponent<Collider2D>().enabled = false;
-        rb.linearVelocity = Vector2.zero;
-        rb.simulated = false;
         animadorSprites.Reproducir(spritesGolpe, 14f, false);
         StartCoroutine(Desaparecer());
     }

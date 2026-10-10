@@ -133,7 +133,13 @@ public class MovimientoJugador : MonoBehaviour
         if (Mathf.Abs(direccionX) > 0.05f) DireccionMirada = Mathf.Sign(direccionX);
 
         float velocidadObjetivo = direccionX * velocidadCaminar;
+        
+        // Fricción Diferenciada: En el aire tienes menos control (conservas inercia)
+        float multiplicadorAire = EnSuelo ? 1f : 0.65f; 
+        
         float tasa = Mathf.Abs(direccionX) > 0.05f ? aceleracion : desaceleracion;
+        tasa *= multiplicadorAire;
+
         float nuevoX = Mathf.MoveTowards(rb.linearVelocity.x, velocidadObjetivo, tasa * Time.fixedDeltaTime);
         rb.linearVelocity = new Vector2(nuevoX, rb.linearVelocity.y);
     }
@@ -178,6 +184,15 @@ public class MovimientoJugador : MonoBehaviour
         EnDash = false;
         rb.gravityScale = gravedadBase;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.3f, 0f);
+    }
+
+    public void ResetearFisicas()
+    {
+        EnDash = false;
+        rb.gravityScale = gravedadBase;
+        rb.linearVelocity = Vector2.zero;
+        ultimoPedidoSalto = -10f;
+        ultimoMomentoEnSuelo = -10f;
     }
 
     private void ManejarMuerte()

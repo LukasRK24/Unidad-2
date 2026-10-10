@@ -34,11 +34,12 @@ public class PanelFinPartida : MonoBehaviour
         else EventosJuego.AlMorirJugador -= Mostrar;
     }
 
-    // Se espera un momento para que se vea la animacion antes de tapar la pantalla
-    private void Mostrar() => Invoke(nameof(Abrir), retrasoMostrar);
+    // Se usa WaitForSecondsRealtime porque si hay Hit-Stop activo, Time.timeScale es 0 y se buguea
+    private void Mostrar() => StartCoroutine(RutinaMostrar());
 
-    private void Abrir()
+    private System.Collections.IEnumerator RutinaMostrar()
     {
+        yield return new WaitForSecondsRealtime(retrasoMostrar);
         panel.SetActive(true);
         botonReiniciar.Select();
     }

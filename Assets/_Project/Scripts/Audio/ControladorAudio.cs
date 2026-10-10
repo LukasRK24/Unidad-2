@@ -45,6 +45,7 @@ public class ControladorAudio : Singleton<ControladorAudio>
 
     private void OnEnable()
     {
+        EventosJuego.AlCambiarVida += ManejarCambioVida;
         EventosJuego.AlSaltarJugador += ManejarSalto;
         EventosJuego.AlAterrizarJugador += ManejarAterrizaje;
         EventosJuego.AlHacerDashJugador += ManejarDash;
@@ -59,6 +60,7 @@ public class ControladorAudio : Singleton<ControladorAudio>
 
     private void OnDisable()
     {
+        EventosJuego.AlCambiarVida -= ManejarCambioVida;
         EventosJuego.AlSaltarJugador -= ManejarSalto;
         EventosJuego.AlAterrizarJugador -= ManejarAterrizaje;
         EventosJuego.AlHacerDashJugador -= ManejarDash;
@@ -109,19 +111,54 @@ public class ControladorAudio : Singleton<ControladorAudio>
         }
     }
 
-    private void Reproducir(AudioClip clip, float volumen = 1f)
+    private void Reproducir(AudioClip clip, float volumen = 1f, bool variarPitch = false)
     {
-        if (clip != null) fuenteEfectos.PlayOneShot(clip, volumen);
+        if (clip == null || fuenteEfectos == null) return;
+        
+        // Fatiga auditiva: Variar pitch aleatoriamente
+        if (variarPitch)
+        {
+            fuenteEfectos.pitch = Random.Range(0.9f, 1.1f);
+        }
+        else
+        {
+            fuenteEfectos.pitch = 1f;
+        }
+        
+        fuenteEfectos.PlayOneShot(clip, volumen);
     }
 
-    private void ManejarSalto(Vector3 posicion) => Reproducir(salto, 0.8f);
-    private void ManejarAterrizaje(Vector3 posicion) => Reproducir(aterrizaje, 0.6f);
-    private void ManejarDash(Vector3 posicion, float direccion) => Reproducir(dash, 0.85f);
-    private void ManejarHerido(Vector3 posicion) => Reproducir(herido);
-    private void ManejarMuerte() => Reproducir(muerte);
-    private void ManejarFruta(Vector3 posicion) => Reproducir(fruta);
-    private void ManejarEnemigoDerrotado(Vector3 posicion) => Reproducir(enemigoDerrotado);
-    private void ManejarNivelCompletado() => Reproducir(nivelCompletado);
-    private void ManejarAviso(string mensaje) => Reproducir(avisoMeta, 0.7f);
-    private void ManejarPausa(bool enPausa) => Reproducir(enPausa ? pausaEntrar : pausaSalir);
+    private float pitchMusicaBase = 1f;
+
+    private void ManejarSalto(Vector3 posicion) => Reproducir(salto, 0.8f, true);
+    private void ManejarAterrizaje(Vector3 posicion) => Reproducir(aterrizaje, 0.6f, true);
+    private void ManejarDash(Vector3 posicion, float direccion) => Reproducir(dash, 0.85f, true);
+    private void ManejarHerido(Vector3 posicion) => Reproducir(herido, 1f, true);
+    private void ManejarMuerte() => Reproducir(muerte, 1f, false);
+    private void ManejarFruta(Vector3 posicion) => Reproducir(fruta, 1f, true);
+    private void ManejarEnemigoDerrotado(Vector3 posicion) => Reproducir(enemigoDerrotado, 1f, true);
+    private void ManejarNivelCompletado() => Reproducir(nivelCompletado, 1f, false);
+    private void ManejarAviso(string mensaje) => Reproducir(avisoMeta, 0.7f, false);
+
+    private void ManejarCambioVida(int actual, int maxima)
+    {
+        // Musica Adaptativa (Tension): Sube el tempo (pitch) si queda 1 vida
+        pitchMusicaBase = (actual == 1 && actual < maxima) ? 1.15f : 1f;
+        
+        if (fuenteMusica != null && ControladorJuego.Instancia != null && !ControladorJuego.Instancia.EnPausa)
+        {
+            fuenteMusica.pitch = pitchMusicaBase;
+        }
+    }
+
+    private void ManejarPausa(bool enPausa) 
+    {
+        Reproducir(enPausa ? pausaEntrar : pausaSalir);
+        
+        // Muffling (Filtro LowPass improvisado) mediante Pitch al pausar
+        if (fuenteMusica != null)
+        {
+            fuenteMusica.pitch = enPausa ? 0.75f : pitchMusicaBase;
+        }
+    }
 }
